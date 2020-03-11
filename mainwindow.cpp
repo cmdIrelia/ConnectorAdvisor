@@ -2,6 +2,8 @@
 #include "ui_mainwindow.h"
 #include <QDebug>
 #include <QSqlQuery>
+#include <QCheckBox>
+#include <QComboBox>
 
 //#include <QRegExp>
 
@@ -13,13 +15,35 @@ MainWindow::MainWindow(QWidget *parent) :
 
     qDebug()<<"init result = "<<InitDatabase("./ConnectorDB.db");
 
+    QStringList series_list;
+    GetSeries(series_list);
+    ui->comboBox_series->addItems(series_list);
+
+    QListWidget* pListWidget = ui->listWidget_series;
+    for (int i = 0; i < series_list.length(); ++i)
+    {
+        QListWidgetItem *pItem = new QListWidgetItem(pListWidget);
+        pListWidget->addItem(pItem);
+        pItem->setData(Qt::UserRole, i);
+        QCheckBox *pCheckBox = new QCheckBox(this);
+        pCheckBox->setText(series_list[i]);
+        pListWidget->addItem(pItem);
+        pListWidget->setItemWidget(pItem, pCheckBox);
+        connect(pCheckBox, SIGNAL(stateChanged(int)), this, SLOT(stateChanged(int)));
+    }
 }
-
-
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+// checkbox 的槽
+void MainWindow::stateChanged(int state)
+{
+    if(state == Qt::Checked) qDebug()<<"Checked!";
+    else if(state == Qt::Unchecked) qDebug()<<"Unchecked!";
+    return;
 }
 
 //数据库神奇数字
@@ -40,6 +64,7 @@ bool MainWindow::CheckMagicNumber()
     {
         return false;
     }
+    return true;
 }
 
 //初始化数据库连接
@@ -61,10 +86,7 @@ bool MainWindow::InitDatabase(QString path)
     if(!CheckMagicNumber()) return false;
 
     query.exec("select * from J30J");
-    if(!query.isSelect())
-    {
-        qDebug()<<"[shincky]something goes wrong with query at: "<<__FILE__<<" Line:"<<__LINE__;
-    }
+    CheckQueryResult(query);
     //查找表中id >=2 的记录的id项和name项的值
     while(query.next())       //query.next()指向查找到的第一条记录，然后每次后移一条记录
     {
@@ -78,5 +100,29 @@ bool MainWindow::InitDatabase(QString path)
         qDebug() << ele0 <<queryResult;       //输出两个值
     }
 
+    return true;
+}
+
+//获取系列
+bool MainWindow::GetSeries(QStringList &series)
+{
+    QSqlQuery query;
+    query.exec("select SeriesName from Series");
+    CheckQueryResult(query);
+    while(query.next())
+    {
+        series.push_back(query.value(0).toString());
+    }
+
+    return true;
+}
+
+bool MainWindow::CheckQueryResult(const QSqlQuery &q)
+{
+    if(!q.isSelect())
+    {
+        qDebug()<<"[shincky]something goes wrong with query at: "<<__FILE__<<" Line:"<<__LINE__;
+        return false;
+    }
     return true;
 }

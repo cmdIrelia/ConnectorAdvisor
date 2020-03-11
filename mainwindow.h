@@ -27,6 +27,14 @@ protected:
 
     bool InitDatabase(QString path);
 
+    bool GetSeries(QStringList &series);
+
+    bool CheckQueryResult(const QSqlQuery& q);
+
+private slots:
+    // series check box的槽
+    void stateChanged(int state);
+
 };
 
 #endif // MAINWINDOW_H
